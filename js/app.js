@@ -2,27 +2,39 @@
 
 const $ = (id) => document.getElementById(id);
 
+const MODES = {
+  ten: { desc: '10問で腕試し。最後にタイプ相性偏差値を表示！' },
+  endless: { desc: '間違えるまで続く。何問連続で正解できる？' },
+};
+
 const state = {
+  mode: 'ten',          // ten（10問）/ endless（間違えるまで）
   difficulty: 'easy',
   questions: [],
+  nextEndless: null,    // エンドレスで次の問題を作る関数
   index: 0,
   score: 0,
   answered: false,
+  lastCorrect: true,
 };
 
 // ---- ハイスコア（ブラウザに保存。使えない環境でも動くようにする） ----
-function loadHighScore(difficulty) {
+function highScoreKey(mode, difficulty) {
+  return (mode === 'endless' ? 'endless-' : 'highscore-') + difficulty;
+}
+
+function loadHighScore(mode, difficulty) {
   try {
-    const v = localStorage.getItem('highscore-' + difficulty);
+    const v = localStorage.getItem(highScoreKey(mode, difficulty));
     return v === null ? null : Number(v);
   } catch {
     return null;
   }
 }
 
-function saveHighScore(difficulty, score) {
+function saveHighScore(mode, difficulty, score) {
   try {
-    localStorage.setItem('highscore-' + difficulty, String(score));
+    localStorage.setItem(highScoreKey(mode, difficulty), String(score));
   } catch {
     // 保存できなくてもゲームは続ける
   }
@@ -34,12 +46,47 @@ function showScreen(name) {
   window.scrollTo(0, 0);
 }
 
+// タイトルに並べるポケモン（開くたびにランダム）
+function renderHero() {
+  const hero = $('hero');
+  hero.replaceChildren();
+  for (const p of shuffle(POKEMON).slice(0, 5)) {
+    const slot = document.createElement('div');
+    slot.className = 'hero-slot';
+    const img = document.createElement('img');
+    img.src = p.image;
+    img.alt = '';
+    img.onerror = () => { img.style.visibility = 'hidden'; };
+    slot.append(img);
+    hero.append(slot);
+  }
+}
+
+function setMode(mode) {
+  state.mode = mode;
+  for (const btn of document.querySelectorAll('[data-mode]')) {
+    btn.setAttribute('aria-checked', String(btn.dataset.mode === mode));
+  }
+  $('mode-desc').textContent = MODES[mode].desc;
+}
+
 function showTitle() {
+  renderHero();
+  setMode(state.mode);
   for (const d of ['easy', 'normal']) {
-    const hs = loadHighScore(d);
-    $('hs-' + d).textContent = hs === null ? '-' : `${hs} / ${CONFIG.questionsPerGame}`;
+    const ten = loadHighScore('ten', d);
+    const endless = loadHighScore('endless', d);
+    $('hs-ten-' + d).textContent = ten === null ? '-' : `${ten} / ${CONFIG.questionsPerGame}`;
+    $('hs-endless-' + d).textContent = endless === null ? '-' : `${endless}連続`;
   }
   showScreen('title');
+}
+
+function renderSoundToggles() {
+  for (const btn of document.querySelectorAll('.sound-toggle')) {
+    btn.textContent = Sound.enabled ? '🔊 音あり' : '🔇 音なし';
+    btn.setAttribute('aria-pressed', String(Sound.enabled));
+  }
 }
 
 function typeTag(type) {
@@ -57,20 +104,35 @@ function typeNames(types) {
 // ---- ゲーム ----
 function startGame(difficulty) {
   state.difficulty = difficulty;
-  state.questions = buildGame();
   state.index = 0;
   state.score = 0;
+  state.lastCorrect = true;
+  if (state.mode === 'endless') {
+    state.nextEndless = createEndlessStream();
+    state.questions = [state.nextEndless()];
+  } else {
+    state.questions = buildGame();
+  }
+  Sound.play('start');
   showScreen('quiz');
   renderQuestion();
+}
+
+function renderHeader() {
+  if (state.mode === 'endless') {
+    $('progress').textContent = `${state.index + 1}問目`;
+    $('score').textContent = `連続 ${state.score}`;
+  } else {
+    $('progress').textContent = `${state.index + 1} / ${state.questions.length}`;
+    $('score').textContent = `正解 ${state.score}`;
+  }
 }
 
 function renderQuestion() {
   const q = state.questions[state.index];
   const p = q.pokemon;
   state.answered = false;
-
-  $('progress').textContent = `${state.index + 1} / ${state.questions.length}`;
-  $('score').textContent = `正解 ${state.score}`;
+  renderHeader();
 
   $('enemy-name').textContent = p.name;
   $('enemy-mega').hidden = !p.mega;
@@ -113,13 +175,20 @@ function renderQuestion() {
   $('feedback').hidden = true;
 }
 
+function isLastQuestion() {
+  if (state.mode === 'endless') return !state.lastCorrect;
+  return state.index + 1 >= state.questions.length;
+}
+
 function answer(choiceIndex) {
   if (state.answered) return;
   state.answered = true;
   const q = state.questions[state.index];
   const correct = choiceIndex === q.correctIndex;
+  state.lastCorrect = correct;
   if (correct) state.score++;
-  $('score').textContent = `正解 ${state.score}`;
+  Sound.play(correct ? 'correct' : 'wrong');
+  renderHeader();
 
   const buttons = $('moves').children;
   for (let i = 0; i < buttons.length; i++) {
@@ -162,38 +231,94 @@ function answer(choiceIndex) {
     list.append(li);
   }
 
-  $('next-button').textContent = state.index + 1 < state.questions.length ? '次へ' : '結果を見る';
+  $('next-button').textContent = isLastQuestion() ? '結果を見る' : '次へ';
   $('feedback').hidden = false;
 }
 
 function next() {
-  state.index++;
-  if (state.index < state.questions.length) {
-    renderQuestion();
-  } else {
+  if (isLastQuestion()) {
     showResult();
+    return;
   }
+  Sound.play('tap');
+  if (state.mode === 'endless') state.questions.push(state.nextEndless());
+  state.index++;
+  renderQuestion();
 }
 
 function showResult() {
-  const prev = loadHighScore(state.difficulty);
-  const isBest = prev === null || state.score > prev;
-  if (isBest) saveHighScore(state.difficulty, state.score);
+  const { mode, difficulty, score } = state;
+  const prev = loadHighScore(mode, difficulty);
+  const isBest = score > 0 && (prev === null || score > prev);
+  if (prev === null || score > prev) saveHighScore(mode, difficulty, score);
 
-  $('result-score').textContent = state.score;
-  $('result-total').textContent = state.questions.length;
-  $('result-best').textContent = isBest
-    ? 'ハイスコア更新！'
-    : `ハイスコア：${prev} / ${CONFIG.questionsPerGame}`;
+  if (mode === 'endless') {
+    $('result-label').textContent = '連続正解';
+    $('result-deviation').textContent = score;
+    $('result-rank').hidden = true;
+    $('result-score').textContent = `${score}問連続で正解！`;
+    $('result-best').textContent = isBest ? 'ハイスコア更新！' : `ハイスコア：${prev ?? 0}連続`;
+    $('result-caption').hidden = true;
+  } else {
+    const deviation = deviationScore(difficulty, score, state.questions.length);
+    $('result-label').textContent = 'タイプ相性偏差値';
+    $('result-deviation').textContent = deviation;
+    $('result-rank').hidden = false;
+    $('result-rank').textContent = deviationRank(deviation);
+    $('result-score').textContent = `${score} / ${state.questions.length} 問正解`;
+    $('result-best').textContent = isBest ? 'ハイスコア更新！' : `ハイスコア：${prev ?? 0} / ${CONFIG.questionsPerGame}`;
+    $('result-caption').hidden = false;
+  }
+  Sound.play(isBest ? 'best' : 'result');
   showScreen('result');
 }
 
+// ---- 途中でやめる ----
+function openQuitDialog() {
+  Sound.play('tap');
+  $('quit-dialog').hidden = false;
+}
+
+function closeQuitDialog() {
+  $('quit-dialog').hidden = true;
+}
+
 // ---- イベント ----
+for (const btn of document.querySelectorAll('[data-mode]')) {
+  btn.addEventListener('click', () => {
+    Sound.play('tap');
+    setMode(btn.dataset.mode);
+  });
+}
 for (const btn of document.querySelectorAll('[data-difficulty]')) {
   btn.addEventListener('click', () => startGame(btn.dataset.difficulty));
 }
+for (const btn of document.querySelectorAll('.sound-toggle')) {
+  btn.addEventListener('click', () => {
+    Sound.setEnabled(!Sound.enabled);
+    Sound.play('tap');
+    renderSoundToggles();
+  });
+}
 $('next-button').addEventListener('click', next);
 $('retry-button').addEventListener('click', () => startGame(state.difficulty));
-$('title-button').addEventListener('click', showTitle);
+$('title-button').addEventListener('click', () => {
+  Sound.play('tap');
+  showTitle();
+});
+$('quit-button').addEventListener('click', openQuitDialog);
+$('quit-cancel').addEventListener('click', () => {
+  Sound.play('tap');
+  closeQuitDialog();
+});
+$('quit-ok').addEventListener('click', () => {
+  closeQuitDialog();
+  Sound.play('tap');
+  showTitle();
+});
+$('quit-dialog').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeQuitDialog();
+});
 
+renderSoundToggles();
 showTitle();

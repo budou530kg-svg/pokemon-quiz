@@ -11,8 +11,15 @@
   <!-- タイトル -->
   <section id="screen-title" class="screen">
     <div class="title-box">
-      <h1>こうかばつぐん<br>クイズ</h1>
+      <div class="type-stripe"></div>
+      <div id="hero" class="hero" aria-hidden="true"></div>
+      <h1 class="title-logo">こうかばつぐん<span>クイズ</span></h1>
       <p class="lead">相手のポケモンに一番通りがいい技を選ぼう！<br>特性にも注意。</p>
+      <div class="mode-switch" role="radiogroup" aria-label="モード">
+        <button role="radio" data-mode="ten" aria-checked="true">10問チャレンジ</button>
+        <button role="radio" data-mode="endless" aria-checked="false">エンドレス</button>
+      </div>
+      <p id="mode-desc" class="mode-desc"></p>
       <div class="difficulty">
         <button class="btn btn-primary" data-difficulty="easy">
           かんたん<small>タイプを表示</small>
@@ -21,19 +28,30 @@
           ふつう<small>タイプを表示しない</small>
         </button>
       </div>
-      <dl class="highscores">
-        <dt>ハイスコア</dt>
-        <dd>かんたん：<span id="hs-easy">-</span></dd>
-        <dd>ふつう：<span id="hs-normal">-</span></dd>
-      </dl>
+      <table class="highscores">
+        <caption>ハイスコア</caption>
+        <thead>
+          <tr><th></th><th>10問</th><th>エンドレス</th></tr>
+        </thead>
+        <tbody>
+          <tr><th>かんたん</th><td id="hs-ten-easy">-</td><td id="hs-endless-easy">-</td></tr>
+          <tr><th>ふつう</th><td id="hs-ten-normal">-</td><td id="hs-endless-normal">-</td></tr>
+        </tbody>
+      </table>
+      <div>
+        <button class="sound-toggle btn-text" type="button"></button>
+      </div>
+      <div class="type-stripe" style="margin-top: 24px"></div>
     </div>
   </section>
 
   <!-- 出題 -->
   <section id="screen-quiz" class="screen" hidden>
     <header class="quiz-header">
+      <button id="quit-button" class="btn-text" type="button">✕ やめる</button>
       <span id="progress">1 / 10</span>
       <span id="score">正解 0</span>
+      <button class="sound-toggle btn-text" type="button"></button>
     </header>
 
     <div class="enemy">
@@ -58,14 +76,28 @@
       <ul id="feedback-list" class="feedback-list"></ul>
       <button id="next-button" class="btn btn-primary">次へ</button>
     </div>
+
+    <div id="quit-dialog" class="dialog-backdrop" hidden>
+      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="quit-title">
+        <p id="quit-title" class="dialog-title">タイトルに戻りますか？</p>
+        <p class="dialog-text">このゲームの記録は保存されません。</p>
+        <div class="dialog-buttons">
+          <button id="quit-cancel" class="btn">つづける</button>
+          <button id="quit-ok" class="btn btn-primary">タイトルへ</button>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- 結果 -->
   <section id="screen-result" class="screen" hidden>
     <div class="title-box">
-      <h2>結果</h2>
-      <p class="result-score"><span id="result-score">0</span> / <span id="result-total">10</span></p>
+      <p id="result-label" class="result-label">タイプ相性偏差値</p>
+      <p id="result-deviation" class="result-deviation">50</p>
+      <p id="result-rank" class="result-rank"></p>
+      <p id="result-score" class="result-score"></p>
       <p id="result-best" class="result-best"></p>
+      <p id="result-caption" class="result-caption">※偏差値は想定した平均点・ばらつきから出した目安です</p>
       <div class="difficulty">
         <button id="retry-button" class="btn btn-primary">もう一度</button>
         <button id="title-button" class="btn">タイトルへ</button>
@@ -78,6 +110,7 @@
   <script src="js/moves.js"></script>
   <script src="js/abilities.js"></script>
   <script src="js/calc.js"></script>
+  <script src="js/sound.js"></script>
   <script src="js/quiz.js"></script>
   <script src="js/app.js"></script>
 </body>
