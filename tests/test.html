@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head><meta charset="UTF-8"><title>tests</title></head>
+<body>
+<pre id="out"></pre>
+<script src="../data/pokemon.js"></script>
+<script src="../js/types.js"></script>
+<script src="../js/moves.js"></script>
+<script src="../js/abilities.js"></script>
+<script src="../js/calc.js"></script>
+<script src="../js/quiz.js"></script>
+<script>
+const lines = [];
+let failed = 0;
+function check(label, actual, expected) {
+  const ok = Math.abs(actual - expected) < 1e-9;
+  if (!ok) failed++;
+  lines.push(`${ok ? 'OK  ' : 'FAIL'} ${label}: ${actual} (expected ${expected})`);
+}
+const mv = (name) => MOVES.find((m) => m.name === name);
+const ev = (move, types, ability) => evaluateMove(mv(move), types, ability).final;
+
+check('れいとうビーム→ドラゴン・じめん', ev('れいとうビーム', ['dragon', 'ground'], 'rough-skin'), 4);
+check('じしん→ふゆう', ev('じしん', ['electric', 'ghost'], 'levitate'), 0);
+check('サウザンアロー→ふゆう', ev('サウザンアロー', ['electric', 'ghost'], 'levitate'), 2);
+check('サウザンアロー→ひこう', ev('サウザンアロー', ['steel', 'flying'], 'pressure'), 2);
+check('じしん→ひこう', ev('じしん', ['steel', 'flying'], 'pressure'), 0);
+check('フリーズドライ→みず・じめん', ev('フリーズドライ', ['water', 'ground'], 'torrent'), 4);
+check('れいとうビーム→みず・じめん', ev('れいとうビーム', ['water', 'ground'], 'torrent'), 1);
+check('フライングプレス→くさ・かくとう', ev('フライングプレス', ['grass', 'fighting'], 'overgrow'), 4);
+check('フライングプレス→あく・はがね', ev('フライングプレス', ['dark', 'steel'], 'x'), 2);
+check('フィルター×4', ev('れいとうビーム', ['dragon', 'ground'], 'filter'), 3);
+check('フィルターは今ひとつには効かない', ev('なみのり', ['grass'], 'filter'), 0.5);
+check('あついしぼう ほのお', ev('かえんほうしゃ', ['grass'], 'thick-fat'), 1);
+check('かんそうはだ ほのお', ev('かえんほうしゃ', ['poison', 'fighting'], 'dry-skin'), 1.25);
+check('かんそうはだ みず', ev('なみのり', ['poison', 'fighting'], 'dry-skin'), 0);
+check('もふもふ フレアドライブ(接触)', ev('フレアドライブ', ['normal'], 'fluffy'), 1);
+check('もふもふ かえんほうしゃ', ev('かえんほうしゃ', ['normal'], 'fluffy'), 2);
+check('もふもふ インファイト', ev('インファイト', ['normal'], 'fluffy'), 1);
+check('ぼうだん シャドーボール', ev('シャドーボール', ['psychic'], 'bulletproof'), 0);
+check('ファーコート 物理', ev('インファイト', ['normal'], 'fur-coat'), 1);
+check('ぼうおん ハイパーボイス', ev('ハイパーボイス', ['dragon'], 'soundproof'), 0);
+check('どしょく サウザンアロー', ev('サウザンアロー', ['rock'], 'earth-eater'), 0);
+
+// 全ポケモン × 何回か出題を作り、正解が必ず 1 つだけで最大になっているか
+let questions = 0, noQuestion = [], withAbilityNote = 0, relevantAbility = 0;
+for (const p of POKEMON) {
+  for (let k = 0; k < 20; k++) {
+    const q = buildQuestion(p);
+    if (!q) { noQuestion.push(p.id); break; }
+    questions++;
+    const finals = q.results.map((r) => r.final);
+    const max = Math.max(...finals);
+    if (finals.filter((f) => sameMultiplier(f, max)).length !== 1 || !sameMultiplier(finals[q.correctIndex], max)) {
+      failed++; lines.push('FAIL unique max ' + p.id);
+    }
+    if (new Set(q.results.map((r) => r.move.type)).size !== 4) { failed++; lines.push('FAIL dup type ' + p.id); }
+    if (ABILITY_EFFECTS[q.ability]) {
+      relevantAbility++;
+      if (q.results.some((r) => r.abilityNote)) withAbilityNote++;
+    }
+  }
+}
+lines.push(`questions=${questions} noQuestion=${noQuestion.join(',') || 'none'} relevantAbility=${relevantAbility} withAbilityNote=${withAbilityNote}`);
+const game = buildGame();
+lines.push(`game length=${game.length} unique=${new Set(game.map((q) => q.pokemon.id)).size}`);
+const missingNames = [...new Set(POKEMON.flatMap((p) => p.abilities))].filter((a) => abilityName(a) === a);
+lines.push('abilities without ja name: ' + (missingNames.join(',') || 'none'));
+lines.push('pokemon without image: ' + (POKEMON.filter((p) => !p.image).map((p) => p.id).join(',') || 'none'));
+lines.push(failed ? `FAILED ${failed}` : 'ALL PASSED');
+document.getElementById('out').textContent = lines.join('\n');
+</script>
+</body>
+</html>

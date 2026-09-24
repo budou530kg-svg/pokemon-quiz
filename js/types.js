@@ -1,0 +1,43 @@
+// タイプの日本語名・表示色・相性表
+window.TYPES = {
+  normal:   { name: 'ノーマル', color: '#9fa19f' },
+  fire:     { name: 'ほのお',   color: '#e62829' },
+  water:    { name: 'みず',     color: '#2980ef' },
+  electric: { name: 'でんき',   color: '#fac000' },
+  grass:    { name: 'くさ',     color: '#3fa129' },
+  ice:      { name: 'こおり',   color: '#3dcef3' },
+  fighting: { name: 'かくとう', color: '#ff8000' },
+  poison:   { name: 'どく',     color: '#9141cb' },
+  ground:   { name: 'じめん',   color: '#915121' },
+  flying:   { name: 'ひこう',   color: '#81b9ef' },
+  psychic:  { name: 'エスパー', color: '#ef4179' },
+  bug:      { name: 'むし',     color: '#91a119' },
+  rock:     { name: 'いわ',     color: '#afa981' },
+  ghost:    { name: 'ゴースト', color: '#704170' },
+  dragon:   { name: 'ドラゴン', color: '#5060e1' },
+  dark:     { name: 'あく',     color: '#624d4e' },
+  steel:    { name: 'はがね',   color: '#60a1b8' },
+  fairy:    { name: 'フェアリー', color: '#ef70ef' },
+};
+
+// TYPE_CHART[攻撃タイプ][防御タイプ] = 倍率（書いていない組み合わせは 1）
+window.TYPE_CHART = {
+  normal:   { rock: 0.5, ghost: 0, steel: 0.5 },
+  fire:     { fire: 0.5, water: 0.5, grass: 2, ice: 2, bug: 2, rock: 0.5, dragon: 0.5, steel: 2 },
+  water:    { fire: 2, water: 0.5, grass: 0.5, ground: 2, rock: 2, dragon: 0.5 },
+  electric: { water: 2, electric: 0.5, grass: 0.5, ground: 0, flying: 2, dragon: 0.5 },
+  grass:    { fire: 0.5, water: 2, grass: 0.5, poison: 0.5, ground: 2, flying: 0.5, bug: 0.5, rock: 2, dragon: 0.5, steel: 0.5 },
+  ice:      { fire: 0.5, water: 0.5, grass: 2, ice: 0.5, ground: 2, flying: 2, dragon: 2, steel: 0.5 },
+  fighting: { normal: 2, ice: 2, poison: 0.5, flying: 0.5, psychic: 0.5, bug: 0.5, rock: 2, ghost: 0, dark: 2, steel: 2, fairy: 0.5 },
+  poison:   { grass: 2, poison: 0.5, ground: 0.5, rock: 0.5, ghost: 0.5, steel: 0, fairy: 2 },
+  ground:   { fire: 2, electric: 2, grass: 0.5, poison: 2, flying: 0, bug: 0.5, rock: 2, steel: 2 },
+  flying:   { electric: 0.5, grass: 2, fighting: 2, bug: 2, rock: 0.5, steel: 0.5 },
+  psychic:  { fighting: 2, poison: 2, psychic: 0.5, dark: 0, steel: 0.5 },
+  bug:      { fire: 0.5, grass: 2, fighting: 0.5, poison: 0.5, flying: 0.5, psychic: 2, ghost: 0.5, dark: 2, steel: 0.5, fairy: 0.5 },
+  rock:     { fire: 2, ice: 2, fighting: 0.5, ground: 0.5, flying: 2, bug: 2, steel: 0.5 },
+  ghost:    { normal: 0, psychic: 2, ghost: 2, dark: 0.5 },
+  dragon:   { dragon: 2, steel: 0.5, fairy: 0 },
+  dark:     { fighting: 0.5, psychic: 2, ghost: 2, dark: 0.5, fairy: 0.5 },
+  steel:    { fire: 0.5, water: 0.5, electric: 0.5, ice: 2, rock: 2, steel: 0.5, fairy: 2 },
+  fairy:    { fire: 0.5, fighting: 2, poison: 0.5, dragon: 2, dark: 2, steel: 0.5 },
+};

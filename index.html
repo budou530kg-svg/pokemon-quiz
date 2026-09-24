@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1c2230">
+  <title>こうかばつぐんクイズ</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- タイトル -->
+  <section id="screen-title" class="screen">
+    <div class="title-box">
+      <h1>こうかばつぐん<br>クイズ</h1>
+      <p class="lead">相手のポケモンに一番通りがいい技を選ぼう！<br>特性にも注意。</p>
+      <div class="difficulty">
+        <button class="btn btn-primary" data-difficulty="easy">
+          かんたん<small>タイプを表示</small>
+        </button>
+        <button class="btn btn-primary" data-difficulty="normal">
+          ふつう<small>タイプを表示しない</small>
+        </button>
+      </div>
+      <dl class="highscores">
+        <dt>ハイスコア</dt>
+        <dd>かんたん：<span id="hs-easy">-</span></dd>
+        <dd>ふつう：<span id="hs-normal">-</span></dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 出題 -->
+  <section id="screen-quiz" class="screen" hidden>
+    <header class="quiz-header">
+      <span id="progress">1 / 10</span>
+      <span id="score">正解 0</span>
+    </header>
+
+    <div class="enemy">
+      <div class="enemy-info">
+        <div class="enemy-name">
+          <span id="enemy-mega" class="mega-badge" hidden>メガシンカ</span>
+          <span id="enemy-name"></span>
+        </div>
+        <div id="enemy-types" class="type-list"></div>
+        <div class="enemy-ability">特性：<strong id="enemy-ability"></strong></div>
+      </div>
+      <div class="enemy-image-wrap">
+        <img id="enemy-image" alt="">
+      </div>
+    </div>
+
+    <div id="moves" class="moves"></div>
+
+    <div id="feedback" class="feedback" hidden>
+      <p id="feedback-title" class="feedback-title"></p>
+      <p id="feedback-types" class="feedback-types"></p>
+      <ul id="feedback-list" class="feedback-list"></ul>
+      <button id="next-button" class="btn btn-primary">次へ</button>
+    </div>
+  </section>
+
+  <!-- 結果 -->
+  <section id="screen-result" class="screen" hidden>
+    <div class="title-box">
+      <h2>結果</h2>
+      <p class="result-score"><span id="result-score">0</span> / <span id="result-total">10</span></p>
+      <p id="result-best" class="result-best"></p>
+      <div class="difficulty">
+        <button id="retry-button" class="btn btn-primary">もう一度</button>
+        <button id="title-button" class="btn">タイトルへ</button>
+      </div>
+    </div>
+  </section>
+
+  <script src="data/pokemon.js"></script>
+  <script src="js/types.js"></script>
+  <script src="js/moves.js"></script>
+  <script src="js/abilities.js"></script>
+  <script src="js/calc.js"></script>
+  <script src="js/quiz.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
